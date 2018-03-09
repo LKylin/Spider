@@ -11,11 +11,6 @@ import us.codecraft.webmagic.selector.Selectable;
 
 public class MM131PageProcessor implements PageProcessor {
 
-	// private static final String URL_REGEX =
-	// "^([hH][tT]{2}[pP]:/*|[hH][tT]{2}[pP][sS]:/*|[fF][tT][pP]:/*)(([A-Za-z0-9-~]+).)+([A-Za-z0-9-~\\/])+(\\?{0,1}(([A-Za-z0-9-~]+\\={0,1})([A-Za-z0-9-~]*)\\&{0,1})*)$";;
-	// private static final String ORIGIN_CODE = "GB2312";
-	// private static final String TARGET_CODE = "GBK";
-
 	private Site site = Site.me().setCycleRetryTimes(5).setRetryTimes(5).setSleepTime(500).setTimeOut(3 * 60 * 1000)
 			.setUserAgent("Mozilla/5.0 (Windows NT 6.1; WOW64; rv:38.0) Gecko/20100101 Firefox/38.0")
 			.addHeader("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
@@ -23,6 +18,7 @@ public class MM131PageProcessor implements PageProcessor {
 
 	public void process(Page page) {
 		List<String> relativeUrl = page.getHtml().xpath("//a/@href").all();
+		page.getRawText();
 		String pageURL = page.getUrl().get();
 		int lastSlash = pageURL.lastIndexOf('/');
 		pageURL = pageURL.substring(0, lastSlash + 1);

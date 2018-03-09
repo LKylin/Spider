@@ -1,10 +1,11 @@
 package com.kyle.spider.pipeline;
 
-import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -30,7 +31,9 @@ public class ImagePipeline extends FilePersistentBase implements Pipeline{
 	private static final long CLIENT_READ_TIME_OUT = 3000;
 
 	private OkHttpClient mOkHttpClient;
-	ExecutorService nExecutor;
+	private ExecutorService nExecutor;
+	private NameGenerator mNameGenerator;
+	private Map<String, String> mHeaders;
 
 	/**
 	 * create a ImagePipeline with default path"/data/webmagic/"
@@ -51,21 +54,39 @@ public class ImagePipeline extends FilePersistentBase implements Pipeline{
 
 	public void process(ResultItems resultItems, Task task) {
 		Log.debug("Process Image Pipeline : " + resultItems.getRequest().getUrl());
-		String path = this.path + PATH_SEPERATOR + task.getUUID() + PATH_SEPERATOR;
+		String imageName;
 		String url;
+		int point;
+		String type;
 		for (Map.Entry<String, Object> entry : resultItems.getAll().entrySet()) {
 			if (entry.getValue() instanceof String) {
 				url = (String) entry.getValue();
 				if (!isValidateImageURL(url)) {
 					continue;
 				} else {
-					String title = entry.getKey();
-					int i = title.lastIndexOf("(");
-					path = path + title.substring(0, i) + PATH_SEPERATOR + title.substring(i +1, title.length() - 1);
-					nExecutor.execute(new DownloadThread(path, url));
+					point = url.lastIndexOf('.');
+					type = url.substring(point);
+					if (null == mNameGenerator) {
+						UUID uuid = UUID.randomUUID();
+						imageName = uuid.toString();
+					} else {
+						imageName = mNameGenerator.generateName(entry, task);
+					}
+					nExecutor.execute(new DownloadThread(path + PATH_SEPERATOR + imageName + type, url));
 				}
 			}
 		}
+	}
+	
+	public void setNameGenerator(NameGenerator nameGenerator) {
+		mNameGenerator = nameGenerator;
+	}
+	
+	public void addRequestHeader(String name, String value) {
+		if (null == mHeaders) {
+			mHeaders =  new LinkedHashMap<String, String>();
+		}
+		mHeaders.put(name, value);
 	}
 
 	private boolean isValidateImageURL(String url) {
@@ -87,11 +108,14 @@ public class ImagePipeline extends FilePersistentBase implements Pipeline{
 
 		public void run() {
 			Log.info("Download " + url);
-			int point = url.lastIndexOf('.');
-			String type = url.substring(point);
-			fileName = fileName + type;
 			try {
-				Request request = new Request.Builder().url(url).addHeader("Referer", "http://www.mm131.com/").build();
+				okhttp3.Request.Builder build = new Request.Builder().url(url);
+				if (null != mHeaders) {
+					for(Map.Entry<String, String> entry : mHeaders.entrySet()) {
+						build.addHeader(entry.getKey(), entry.getValue());
+					}
+				}
+				Request request = build.build();
 				Response response = mOkHttpClient.newCall(request).execute();
 				InputStream is = response.body().byteStream();
 				FileOutputStream fos = new FileOutputStream(getFile(fileName));
@@ -110,6 +134,16 @@ public class ImagePipeline extends FilePersistentBase implements Pipeline{
 				e.printStackTrace();
 			}
 		}
+	}
+	
+	public interface NameGenerator {
+		/**
+		 * 生成照片文件名，允许包含父目录，不用包含文件类型的后缀，会根据URL自动生成。
+		 * @param imageInfo 照片信息，为添加Pipeline时用的键值对
+		 * @param task 本次爬取的Task
+		 * @return 照片文件名
+		 */
+		public String generateName(Map.Entry<String, Object> imageInfo, Task task);
 	}
 	
 }
