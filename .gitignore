@@ -1,5 +1,7 @@
 # Compiled class file
 *.class
+target\classes\*
+target\test-classes\*
 
 # Log file
 *.log
