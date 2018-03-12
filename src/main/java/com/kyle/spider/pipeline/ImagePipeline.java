@@ -45,7 +45,7 @@ public class ImagePipeline extends FilePersistentBase implements Pipeline{
 	public ImagePipeline(String path) {
 		setPath(path);
 		nExecutor = new ThreadPoolExecutor(CORE_POOL_SIZE, MAXIMUM_POOL_SIZE, KEEP_ALIVE, TimeUnit.SECONDS,
-				new LinkedBlockingQueue<Runnable>(128));
+				new LinkedBlockingQueue<Runnable>(1024));
 		OkHttpClient.Builder build = new OkHttpClient.Builder();
 		build.connectTimeout(CLIENT_CONNECT_TIME_OUT, TimeUnit.MILLISECONDS);
 		build.readTimeout(CLIENT_READ_TIME_OUT, TimeUnit.MILLISECONDS);
@@ -127,9 +127,6 @@ public class ImagePipeline extends FilePersistentBase implements Pipeline{
 					fos.write(buffer, 0, length);
 				}
 				fos.close();
-				if (fileSize < 20480) {
-					getFile(fileName).delete();
-				}
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
