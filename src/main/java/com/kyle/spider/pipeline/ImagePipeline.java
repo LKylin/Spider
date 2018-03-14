@@ -1,8 +1,13 @@
 package com.kyle.spider.pipeline;
 
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -10,6 +15,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+
+import org.apache.commons.codec.digest.DigestUtils;
 
 import com.kyle.spider.util.Log;
 
@@ -112,8 +119,11 @@ public class ImagePipeline extends FilePersistentBase implements Pipeline{
 		}
 
 		public void run() {
-			Log.info("Download " + url);
 			try {
+				File file = getFile(fileName);
+				if (file.exists()) {
+					return;
+				}
 				okhttp3.Request.Builder build = new Request.Builder().url(url);
 				if (null != mHeaders) {
 					for(Map.Entry<String, String> entry : mHeaders.entrySet()) {
@@ -123,7 +133,7 @@ public class ImagePipeline extends FilePersistentBase implements Pipeline{
 				Request request = build.build();
 				Response response = mOkHttpClient.newCall(request).execute();
 				InputStream is = response.body().byteStream();
-				FileOutputStream fos = new FileOutputStream(getFile(fileName));
+				FileOutputStream fos = new FileOutputStream(file);
 				byte[] buffer = new byte[1024];
 				int length = 0;
 				long fileSize = 0;
@@ -132,9 +142,27 @@ public class ImagePipeline extends FilePersistentBase implements Pipeline{
 					fos.write(buffer, 0, length);
 				}
 				fos.close();
+				Log.info("Download " + url + ", size : " + fileSize);
 			} catch (IOException e) {
-				e.printStackTrace();
+				Log.error("Download " + url + "failed!");
+				recordDownloadFailedImage(url);
 			}
+		}
+		
+		private void recordDownloadFailedImage(String url) {
+			synchronized (ImagePipeline.class) {
+				File file = getFile(getPath() + PATH_SEPERATOR + "FailedURL.txt");
+				try {
+					PrintWriter printWriter = new PrintWriter(new OutputStreamWriter(new FileOutputStream(file),"UTF-8"));
+					printWriter.println(url);
+					printWriter.close();
+				} catch (UnsupportedEncodingException e) {
+					e.printStackTrace();
+				} catch (FileNotFoundException e) {
+					e.printStackTrace();
+				}
+			}
+			
 		}
 	}
 	
