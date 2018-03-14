@@ -51,7 +51,7 @@ public class ZhihuAnswerProcessor implements PageProcessor{
 		if (null != zhAnswerListResponse) {
 			for(ZHAnswerData data : zhAnswerListResponse.getData()) {
 				html = new Html(data.getContent(), page.getRequest().getUrl());
-				List<String> relativeUrl = html.xpath("//img/@data-original").all();;
+				List<String> relativeUrl = html.xpath("//img[@data-actualsrc]/@data-actualsrc").all();;
 				for (String imgUrl : relativeUrl) {
 					Log.info("ImageURL : " + imgUrl);
 					page.putField(imgUrl, imgUrl);
