@@ -26,12 +26,12 @@ public class ImagePipeline extends FilePersistentBase implements Pipeline{
 	private static final int CPU_COUNT = Runtime.getRuntime().availableProcessors();
 	private static final int CORE_POOL_SIZE = CPU_COUNT + 1;
 	private static final int MAXIMUM_POOL_SIZE = CPU_COUNT * 2 + 1;
-	private static final int KEEP_ALIVE = 1;
+	private static final long KEEP_ALIVE = 1L;
 	private static final long CLIENT_CONNECT_TIME_OUT = 3000;
 	private static final long CLIENT_READ_TIME_OUT = 3000;
 
 	private OkHttpClient mOkHttpClient;
-	private ExecutorService nExecutor;
+	private ThreadPoolExecutor mExecutor;
 	private NameGenerator mNameGenerator;
 	private Map<String, String> mHeaders;
 
@@ -44,8 +44,9 @@ public class ImagePipeline extends FilePersistentBase implements Pipeline{
 
 	public ImagePipeline(String path) {
 		setPath(path);
-		nExecutor = new ThreadPoolExecutor(CORE_POOL_SIZE, MAXIMUM_POOL_SIZE, KEEP_ALIVE, TimeUnit.SECONDS,
-				new LinkedBlockingQueue<Runnable>(1024));
+		mExecutor = new ThreadPoolExecutor(CORE_POOL_SIZE, Integer.MAX_VALUE, KEEP_ALIVE, TimeUnit.SECONDS,
+				new LinkedBlockingQueue<Runnable>());
+		mExecutor.allowCoreThreadTimeOut(true);
 		OkHttpClient.Builder build = new OkHttpClient.Builder();
 		build.connectTimeout(CLIENT_CONNECT_TIME_OUT, TimeUnit.MILLISECONDS);
 		build.readTimeout(CLIENT_READ_TIME_OUT, TimeUnit.MILLISECONDS);
@@ -72,7 +73,7 @@ public class ImagePipeline extends FilePersistentBase implements Pipeline{
 					} else {
 						imageName = mNameGenerator.generateName(entry, task);
 					}
-					nExecutor.execute(new DownloadThread(path + PATH_SEPERATOR + imageName + type, url));
+					mExecutor.execute(new DownloadThread(path + PATH_SEPERATOR + imageName + type, url));
 				}
 			}
 		}
@@ -87,6 +88,10 @@ public class ImagePipeline extends FilePersistentBase implements Pipeline{
 			mHeaders =  new LinkedHashMap<String, String>();
 		}
 		mHeaders.put(name, value);
+	}
+	
+	public void destory() {
+		mExecutor.shutdown();
 	}
 
 	private boolean isValidateImageURL(String url) {
