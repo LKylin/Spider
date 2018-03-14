@@ -121,6 +121,7 @@ public class ImagePipeline extends FilePersistentBase implements Pipeline{
 		public void run() {
 			try {
 				File file = getFile(fileName);
+				// TODO 文件重复检查好像应该检查URL，检查文件名不准确啊
 				if (file.exists()) {
 					return;
 				}
