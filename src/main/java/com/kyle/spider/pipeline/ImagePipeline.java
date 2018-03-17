@@ -11,12 +11,9 @@ import java.io.UnsupportedEncodingException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-
-import org.apache.commons.codec.digest.DigestUtils;
 
 import com.kyle.spider.util.Log;
 
@@ -32,7 +29,7 @@ public class ImagePipeline extends FilePersistentBase implements Pipeline{
 
 	private static final int CPU_COUNT = Runtime.getRuntime().availableProcessors();
 	private static final int CORE_POOL_SIZE = CPU_COUNT + 1;
-	private static final int MAXIMUM_POOL_SIZE = CPU_COUNT * 2 + 1;
+//	private static final int MAXIMUM_POOL_SIZE = CPU_COUNT * 2 + 1;
 	private static final long KEEP_ALIVE = 1L;
 	private static final long CLIENT_CONNECT_TIME_OUT = 3000;
 	private static final long CLIENT_READ_TIME_OUT = 3000;

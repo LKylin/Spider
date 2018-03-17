@@ -2,8 +2,7 @@
 
 # Compiled class file
 *.class
-target\classes\*
-target\test-classes\*
+/target/
 
 # Log file
 *.log
